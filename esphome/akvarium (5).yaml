@@ -1,0 +1,217 @@
+esphome:
+  name: cyd-ascii-aquarium
+  friendly_name: CYD ASCII Aquarium
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# Registrace naší externí komponenty z lokální složky
+external_components:
+  - source:
+      type: local
+      path: my_components
+
+# Vytvoření instance akvária
+ascii_aquarium:
+  id: my_aquarium
+
+# Synchronizace přesného času z HA/NTP
+time:
+  - platform: sntp
+    id: sntp_time
+    timezone: "Europe/Prague"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+
+ota:
+  platform: esphome
+api:
+logger:
+
+
+
+number:
+  - platform: template
+    name: "Pocet rybicek"
+    id: fish_count
+    optimistic: true
+    min_value: 1
+    max_value: 12
+    step: 1
+    initial_value: 6
+    set_action:
+      then:
+        - lambda: 'id(my_aquarium).max_fishes = x;'
+
+  - platform: template
+    name: "Rychlost akvaria"
+    id: sim_speed
+    optimistic: true
+    min_value: 0.2
+    max_value: 3.0
+    step: 0.1
+    initial_value: 1.0
+    set_action:
+      then:
+        - lambda: 'id(my_aquarium).speed_multiplier = x;'
+
+button:
+  - platform: template
+    name: "Nasypat krmeni"
+    on_press:
+      then:
+        - lambda: 'id(my_aquarium).feed_fishes();'
+
+font:
+  - file: "gfonts://Roboto Mono"
+    id: ascii_font
+    size: 14
+
+spi:
+  id: tft_spi
+  clk_pin: GPIO14
+  mosi_pin: GPIO13
+  miso_pin:
+    number: GPIO12
+    ignore_strapping_warning: true
+
+output:
+  - platform: ledc
+    pin: GPIO21
+    id: backlight_pwm
+
+light:
+  - platform: monochromatic
+    output: backlight_pwm
+    name: "Podsviceni displeje"
+    id: tft_backlight
+    restore_mode: ALWAYS_ON
+# Definice přepínačů pro Home Assistant
+switch:
+  - platform: template
+    name: "Zobrazit velke hodiny"
+    id: clock_switch
+    optimistic: true
+  #  initial_state: true
+    turn_on_action:
+      lambda: 'id(my_aquarium).show_clock = true;'
+    turn_off_action:
+      lambda: 'id(my_aquarium).show_clock = false;'
+
+  - platform: template
+    name: "Zobrazit male hodiny v rohu"
+    id: small_clock_switch
+    optimistic: true
+  #  initial_state: true
+    turn_on_action:
+      lambda: 'id(my_aquarium).show_small_clock = true;'
+    turn_off_action:
+      lambda: 'id(my_aquarium).show_small_clock = false;'
+
+  - platform: template
+    name: "Zobrazit datum v hlavicce"
+    id: date_switch
+    optimistic: true
+   # initial_state: true
+    turn_on_action:
+      lambda: 'id(my_aquarium).show_date = true;'
+    turn_off_action:
+      lambda: 'id(my_aquarium).show_date = false;'
+  - platform: template
+    name: "Zobrazit hodiny s datem v ramecku"
+    id: box_clock_switch
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+# ... ponechte sekce number, button, font, spi, light nezměněné ...
+
+display:
+  - platform: ili9xxx
+    model: ILI9342
+    spi_id: tft_spi
+    cs_pin: GPIO15
+    dc_pin: GPIO2
+    reset_pin: GPIO4
+    color_palette: 8BIT
+    color_order: RGB
+    dimensions:
+      height: 240
+      width: 320
+    invert_colors: false
+    auto_clear_enabled: true
+    update_interval: 16ms
+    lambda: |-
+      auto* aq = (ascii_aquarium::AsciiAquarium*)id(my_aquarium);
+      auto time_now = id(sntp_time).now();
+      struct tm time_c = time_now.to_c_tm();
+
+      // 1. DYNAMICKÁ GENERACE HORNÍHO PRUHU: hh:mm -- CYD AQUARIUM -- d.m.
+      std::string header_text = "";
+      
+      if (time_now.is_valid()) {
+          char time_buf[16];
+          char date_buf[16];
+          
+          // Pokud jsou zapnuté malé hodiny, zformátujeme hh:mm
+          if (aq->show_small_clock) {
+              strftime(time_buf, sizeof(time_buf), "%H:%M", &time_c);
+              header_text += time_buf;
+              header_text += " ";
+          }
+          
+          header_text += "-- CYD AQUARIUM --";
+          
+          // Pokud je zapnutý přepínač pro datum, zformátujeme d.m.
+          if (aq->show_date) {
+              strftime(date_buf, sizeof(date_buf), " %d.%m.", &time_c);
+              header_text += date_buf;
+          }
+      } else {
+          header_text = "-- CYD AQUARIUM --";
+      }
+
+      // Vykreslení modré linky pod záhlavím a samotného textu záhlaví
+      it.line(0, 22, 320, 22, Color(0, 120, 255));
+      it.print(160, 2, id(ascii_font), Color(0, 180, 255), esphome::display::TextAlign::TOP_CENTER, header_text.c_str());
+
+      // Vykreslení stoupajících bublin
+      for (const auto& b : aq->bubbles) {
+          it.print(b.x, b.y, id(ascii_font), Color(140, 220, 255), "o");
+      }
+      // Vykreslení krmení
+      for (const auto& fd : aq->foods) {
+          it.print(fd.x, fd.y, id(ascii_font), Color(255, 200, 80), "*");
+      }
+      // Vykreslení rybiček
+      for (const auto& f : aq->fishes) {
+          it.print(f.x, f.y, id(ascii_font), Color(255, 160, 0), f.art.c_str());
+      }
+
+      // Vykreslení velkých retro ASCII digitálních hodin
+      if (aq->show_clock && time_now.is_valid()) {
+          char big_time_str[16];
+          strftime(big_time_str, sizeof(big_time_str), "%H:%M", &time_c);
+          aq->draw_ascii_clock(it, 80, 90, big_time_str, Color(0, 255, 255), id(ascii_font), esphome::display::TextAlign::TOP_LEFT);
+      }
+
+      // Vykreslení hodin s datem v rámečku (přepínač box_clock_switch)
+      if (id(box_clock_switch).state && time_now.is_valid()) {
+          char box_time[16];
+          char box_date[16];
+          strftime(box_time, sizeof(box_time), "%H:%M:%S", &time_c);
+          strftime(box_date, sizeof(box_date), "%d.%m.%Y", &time_c);
+
+        
+          it.rectangle(60, 80, 200, 70, Color(0, 128, 255));
+          it.print(160, 92, id(ascii_font), Color(0, 255, 255), esphome::display::TextAlign::TOP_CENTER, box_time);
+          it.print(160, 120, id(ascii_font), Color(0, 128, 255), esphome::display::TextAlign::TOP_CENTER, box_date);
+      }      
+      // Vykreslení statického mořského dna a řas
+      it.print(0, 220, id(ascii_font), Color(210, 140, 80), "__________________________________________");
+      it.print(15, 224, id(ascii_font), Color(40, 200, 80), "vVv");
+      it.print(120, 224, id(ascii_font), Color(40, 200, 80), "vVvVv");
+      it.print(260, 224, id(ascii_font), Color(40, 200, 80), "vVv");
