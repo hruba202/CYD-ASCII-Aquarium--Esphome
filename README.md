@@ -1,4 +1,4 @@
-# CYD-ASCII-Aquarium--Esphome
+# CYD-ASCII-Aquarium--Esphome ,Aquarium-- Elecrow CrowPanel Advance with a voice assistant.
 An ESPHome port of the popular retro ASCII Aquarium and digital clock, fully optimized for the ESP32 CYD (Cheap Yellow Display) boards. Features native switch integration for Home Assistant.
 # ESPHome Retro ASCII Aquarium (for ESP32 CYD)
 
