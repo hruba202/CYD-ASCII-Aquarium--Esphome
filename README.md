@@ -27,7 +27,7 @@ Once flashed, this project automatically exposes the following native controls t
 
 ### Actions
 - **Pour out the feed:** A button entity that instantly spawns fish-feeding animations, making the school of fish temporarily accelerate.
-- **Add text or sensor data to the fish
+- Add text or sensor data to the fish
 ---
 
 ## 📂 Repository Structure
