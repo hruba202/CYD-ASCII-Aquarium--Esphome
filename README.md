@@ -2,7 +2,7 @@
 An ESPHome port of the popular retro ASCII Aquarium and digital clock, fully optimized for the ESP32 CYD (Cheap Yellow Display) boards. Features native switch integration for Home Assistant.
 # ESPHome Retro ASCII Aquarium (for ESP32 CYD)
 
-# ESPHome Retro ASCII Aquarium (for ESP32 CYD)
+
 
 A complete, asynchronous **ESPHome external component** port of the retro ASCII Aquarium and digital clock, optimized specifically for the **ESP32 CYD (Cheap Yellow Display / ESP32-2432S028R)**. 
 
