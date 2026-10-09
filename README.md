@@ -65,3 +65,11 @@ This project is open-source under the MIT License. Feel free to fork, customize 
 <img width="2016" height="1512" alt="ag4" src="https://github.com/user-attachments/assets/b0e9a719-6171-4511-b914-b78559d44441" />
 <img width="2016" height="1512" alt="ag3" src="https://github.com/user-attachments/assets/edf49231-201b-44c8-9d23-d44dbffc2135" />
 <img width="2016" height="1512" alt="ag2" src="https://github.com/user-attachments/assets/c333d464-5a9a-430e-9ffd-d77443d12ee9" />
+
+Aquarium-- Elecrow CrowPanel Advance with a voice assistant
+
+<img width="2016" height="1512" alt="agth1" src="https://github.com/user-attachments/assets/c84a0537-7629-4788-9b7d-0d164879cd0c" />
+<img width="2016" height="1512" alt="aglst" src="https://github.com/user-attachments/assets/37251639-e695-49dc-9f8f-1a3762b1dce6" />
+<img width="2016" height="1512" alt="agspkjpeg" src="https://github.com/user-attachments/assets/c5857876-8268-49d0-8750-d01021c0fb6e" />
+
+
